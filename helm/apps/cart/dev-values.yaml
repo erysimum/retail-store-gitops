@@ -1,0 +1,38 @@
+# Cart service — Java/Spring Boot, shopping cart API
+# Stores cart data in DynamoDB
+name: cart
+
+image:
+  repository: public.ecr.aws/aws-containers/retail-store-sample-cart
+  tag: "0.8.3"
+
+replicas: 1
+
+port: 8080
+
+healthCheck:
+  path: /actuator/health     # Spring Boot Actuator
+  livenessDelay: 60
+  readinessDelay: 30
+
+env:
+  - name: CARTS_DYNAMODB_TABLENAME
+    value: "retail-store-cart-dev"
+  # DynamoDB endpoint configured via Pod Identity — no keys in env vars
+  # The cart service auto-discovers DynamoDB via AWS SDK default credential chain
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "512Mi"
+  limits:
+    memory: "1Gi"
+
+service:
+  type: ClusterIP
+  port: 80
+
+serviceAccount:
+  annotations: {}
+  # Pod Identity annotation will be added when IAM role is created:
+  # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/retail-store-cart-dev

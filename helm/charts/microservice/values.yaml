@@ -1,0 +1,51 @@
+# Default values for the generic microservice chart.
+# Each service overrides these in its own dev-values.yaml.
+
+name: ""
+
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+replicas: 1
+
+port: 8080
+
+# Health check configuration
+# path varies per framework:
+#   Spring Boot (Java): /actuator/health
+#   Go: /health
+#   NestJS (Node.js): /health
+healthCheck:
+  path: /health
+  livenessDelay: 30
+  readinessDelay: 10
+
+# Environment variables passed to the container
+env: []
+  # - name: SOME_VAR
+  #   value: "some-value"
+
+# Resource requests and limits
+# NOTE: No CPU limit — intentional. CPU is compressible,
+# limits cause throttling. Pods burst when node has spare CPU.
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    memory: "512Mi"
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+
+# ServiceAccount for Pod Identity / IRSA
+serviceAccount:
+  annotations: {}
+
+# Optional volume mounts and volumes
+volumeMounts: []
+volumes: []
