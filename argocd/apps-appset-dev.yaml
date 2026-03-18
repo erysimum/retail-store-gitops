@@ -1,0 +1,67 @@
+
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: retail-store-apps-dev
+  namespace: argocd
+spec:
+  # ── Generator: defines WHAT to create ──
+  generators:
+    - list:
+        elements:
+          - name: ui
+            namespace: ui-dev
+          - name: catalog
+            namespace: catalog-dev
+          - name: cart
+            namespace: cart-dev
+          - name: checkout
+            namespace: checkout-dev
+          - name: orders
+            namespace: orders-dev
+
+  # ── Template: defines HOW each Application looks ──
+  template:
+    metadata:
+      # {{name}} is replaced by each element's name field
+      name: "{{name}}-dev"
+      namespace: argocd
+      labels:
+        app.kubernetes.io/part-of: retail-store
+        environment: dev
+      # sync-wave "1" means apps deploy AFTER platform (wave "0")
+      annotations:
+        argocd.argoproj.io/sync-wave: "1"
+    spec:
+      project: default
+
+      # Source: WHERE to find the Helm chart and values
+      source:
+        repoURL: https://github.com/erysimum/retail-store-gitops.git
+        targetRevision: main
+        path: helm/charts/microservice
+
+        # Helm-specific configuration
+        helm:
+          # Use the per-service values file
+          valueFiles:
+            # Relative path from the chart directory to the values file
+            - ../../../helm/apps/{{name}}/dev-values.yaml
+
+      # Destination: WHERE to deploy
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+
+      # Sync policy: how ArgoCD manages the Application
+      syncPolicy:
+        automated:
+          # prune: delete resources that are in cluster but NOT in Git
+          prune: true
+          # selfHeal: revert manual kubectl changes back to Git state
+          selfHeal: true
+        syncOptions:
+          # Create the namespace if it doesn't exist
+          # (it should already exist from platform layer, but safety net)
+          - CreateNamespace=false
