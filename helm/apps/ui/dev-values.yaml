@@ -1,0 +1,38 @@
+# UI service — Java/Spring Boot, serves web frontend
+# Calls: catalog, cart, checkout
+name: ui
+
+image:
+  repository: public.ecr.aws/aws-containers/retail-store-sample-ui
+  tag: "0.8.3"
+
+replicas: 1
+
+port: 8080
+
+healthCheck:
+  path: /actuator/health     # Spring Boot Actuator — all Java services use this
+  livenessDelay: 60           # JVM warmup + Spring context initialization
+  readinessDelay: 30
+
+env:
+  - name: ENDPOINTS_CATALOG
+    value: "http://catalog.catalog-dev.svc.cluster.local"
+  - name: ENDPOINTS_CARTS
+    value: "http://cart.cart-dev.svc.cluster.local"
+  - name: ENDPOINTS_CHECKOUT
+    value: "http://checkout.checkout-dev.svc.cluster.local"
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"           # Java/Spring Boot needs more heap
+  limits:
+    memory: "1Gi"
+
+service:
+  type: ClusterIP
+  port: 80
+
+serviceAccount:
+  annotations: {}
