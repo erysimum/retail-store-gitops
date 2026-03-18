@@ -1,0 +1,39 @@
+# Orders service — Java/Spring Boot, order management
+# Connects to: PostgreSQL (RDS), RabbitMQ (Amazon MQ or in-cluster)
+name: orders
+
+image:
+  repository: public.ecr.aws/aws-containers/retail-store-sample-orders
+  tag: "0.8.3"
+
+replicas: 1
+
+port: 8080
+
+healthCheck:
+  path: /actuator/health     # Spring Boot Actuator
+  livenessDelay: 60
+  readinessDelay: 30
+
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: "default"
+  # DB and RabbitMQ endpoints will be configured when infra is provisioned
+  # - name: SPRING_DATASOURCE_URL
+  #   value: "jdbc:postgresql://rds-endpoint:5432/orders"
+  # - name: SPRING_RABBITMQ_HOST
+  #   value: "rabbitmq-endpoint"
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "512Mi"
+  limits:
+    memory: "1Gi"
+
+service:
+  type: ClusterIP
+  port: 80
+
+serviceAccount:
+  annotations: {}

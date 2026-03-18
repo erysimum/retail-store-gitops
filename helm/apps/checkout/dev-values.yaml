@@ -1,0 +1,37 @@
+# Checkout service — Node.js/NestJS, orchestrates checkout flow
+# Connects to: Redis (session/state), Orders service (place order)
+name: checkout
+
+image:
+  repository: public.ecr.aws/aws-containers/retail-store-sample-checkout
+  tag: "0.8.3"
+
+replicas: 1
+
+port: 8080
+
+healthCheck:
+  path: /health               # NestJS Terminus module
+  livenessDelay: 20           # Node.js starts faster than Java
+  readinessDelay: 10
+
+env:
+  - name: ENDPOINTS_ORDERS
+    value: "http://orders.orders-dev.svc.cluster.local"
+  # Redis endpoint will be updated when ElastiCache is provisioned
+  # - name: REDIS_URL
+  #   value: "redis://redis-endpoint:6379"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"           # Node.js is lighter than Java
+  limits:
+    memory: "512Mi"
+
+service:
+  type: ClusterIP
+  port: 80
+
+serviceAccount:
+  annotations: {}
