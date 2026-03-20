@@ -11,7 +11,7 @@ replicas: 1
 port: 8080
 
 healthCheck:
-  path: /actuator/health     # Spring Boot Actuator — all Java services use this
+  path: /actuator/health     # Spring Boot Actuator
   livenessDelay: 60           # JVM warmup + Spring context initialization
   readinessDelay: 30
 
@@ -26,7 +26,7 @@ env:
 resources:
   requests:
     cpu: "250m"
-    memory: "512Mi"           # Java/Spring Boot needs more heap
+    memory: "512Mi"
   limits:
     memory: "1Gi"
 
@@ -36,3 +36,19 @@ service:
 
 serviceAccount:
   annotations: {}
+
+# Ingress — expose UI via NGINX Ingress Controller + NLB
+ingress:
+  enabled: true
+  className: external-nginx
+  annotations: {}
+  hosts:
+    - paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # TLS will be added later when cert-manager is installed:
+  # tls:
+  #   - hosts:
+  #       - retail-store.example.com
+  #     secretName: retail-store-tls
