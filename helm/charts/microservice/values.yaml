@@ -49,3 +49,13 @@ serviceAccount:
 # Optional volume mounts and volumes
 volumeMounts: []
 volumes: []
+
+# Ingress configuration
+# Only enable for services that need external access (UI)
+# Backend services (catalog, cart, checkout, orders) stay as ClusterIP
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  tls: []
