@@ -14,9 +14,9 @@ healthCheck:
   livenessDelay: 15        # Go starts fast, no JVM warmup
   readinessDelay: 5
 
-env:
-  - name: RETAIL_CATALOG_PERSISTENCE_PROVIDER
-    value: "in-memory"
+env: []
+  # - name: RETAIL_CATALOG_PERSISTENCE_PROVIDER
+    # value: "in-memory"
   # DB endpoint will be updated when RDS is provisioned
   # For now, using in-memory mode (app defaults to in-memory if DB unavailable)
 
