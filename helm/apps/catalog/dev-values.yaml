@@ -16,7 +16,7 @@ healthCheck:
 
 env:
   - name: RETAIL_CATALOG_PERSISTENCE_PROVIDER
-    value: "mysql"
+    value: "in-memory"
   # DB endpoint will be updated when RDS is provisioned
   # For now, using in-memory mode (app defaults to in-memory if DB unavailable)
 
