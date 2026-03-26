@@ -1,31 +1,41 @@
-# Catalog service — Go app, serves product catalog from MySQL
+# Catalog service — Go app, serves product catalog
+# Database: MariaDB (catalog-db in same namespace)
+# Source: docker-compose catalog + catalog-db sections
 name: catalog
 
 image:
   repository: public.ecr.aws/aws-containers/retail-store-sample-catalog
-  tag: "0.8.3"
+  tag: "1.4.0"
 
 replicas: 1
-
 port: 8080
 
 healthCheck:
-  path: /health            # Go app — no framework convention, custom /health
-  livenessDelay: 15        # Go starts fast, no JVM warmup
+  path: /health
+  livenessDelay: 15
   readinessDelay: 5
 
-env: []
-  # - name: RETAIL_CATALOG_PERSISTENCE_PROVIDER
-    # value: "in-memory"
-  # DB endpoint will be updated when RDS is provisioned
-  # For now, using in-memory mode (app defaults to in-memory if DB unavailable)
+# Env vars from docker-compose:
+#   RETAIL_CATALOG_PERSISTENCE_PROVIDER=mysql
+#   RETAIL_CATALOG_PERSISTENCE_ENDPOINT=catalog-db:3306
+#   RETAIL_CATALOG_PERSISTENCE_PASSWORD=${DB_PASSWORD}
+#
+# "catalog-db" works as hostname because the database Service
+# is in the SAME namespace (catalog-dev). No full DNS needed.
+env:
+  - name: RETAIL_CATALOG_PERSISTENCE_PROVIDER
+    value: "mysql"
+  - name: RETAIL_CATALOG_PERSISTENCE_ENDPOINT
+    value: "catalog-db:3306"
+  - name: RETAIL_CATALOG_PERSISTENCE_PASSWORD
+    value: "password"
 
 resources:
   requests:
     cpu: "100m"
     memory: "128Mi"
   limits:
-    memory: "256Mi"         # Go is memory-efficient, doesn't need 512Mi
+    memory: "256Mi"
 
 service:
   type: ClusterIP
@@ -33,3 +43,23 @@ service:
 
 serviceAccount:
   annotations: {}
+
+# MariaDB companion container for dev
+# From docker-compose: catalog-db service, image mariadb:10.9
+# In prod: disable this, use RDS MySQL endpoint instead
+database:
+  enabled: true
+  name: catalog-db
+  image: mariadb:10.9
+  port: 3306
+  env:
+    - name: MYSQL_ROOT_PASSWORD
+      value: "password"
+    - name: MYSQL_ALLOW_EMPTY_PASSWORD
+      value: "true"
+    - name: MYSQL_DATABASE
+      value: "catalogdb"
+    - name: MYSQL_USER
+      value: "catalog_user"
+    - name: MYSQL_PASSWORD
+      value: "password"

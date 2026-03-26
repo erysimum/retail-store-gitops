@@ -1,31 +1,39 @@
-# Checkout service — Node.js/NestJS, orchestrates checkout flow
-# Connects to: Redis (session/state), Orders service (place order)
+# Checkout service — Node.js/NestJS, checkout orchestration
+# Database: Redis (checkout-redis in same namespace)
+# Source: docker-compose checkout + checkout-redis sections
 name: checkout
 
 image:
   repository: public.ecr.aws/aws-containers/retail-store-sample-checkout
-  tag: "0.8.3"
+  tag: "1.4.0"
 
 replicas: 1
-
 port: 8080
 
 healthCheck:
-  path: /health               # NestJS Terminus module
-  livenessDelay: 20           # Node.js starts faster than Java
+  path: /health
+  livenessDelay: 20
   readinessDelay: 10
 
+# Env vars from docker-compose:
+#   RETAIL_CHECKOUT_PERSISTENCE_PROVIDER=redis
+#   RETAIL_CHECKOUT_PERSISTENCE_REDIS_URL=redis://checkout-redis:6379
+#   RETAIL_CHECKOUT_ENDPOINTS_ORDERS=http://orders:8080
+#
+# "checkout-redis" is in same namespace (checkout-dev) — short hostname works
+# Orders is in orders-dev namespace — needs full Kubernetes DNS
 env:
-  - name: ENDPOINTS_ORDERS
-    value: "http://orders.orders-dev.svc.cluster.local"
-  # Redis endpoint will be updated when ElastiCache is provisioned
-  # - name: REDIS_URL
-  #   value: "redis://redis-endpoint:6379"
+  - name: RETAIL_CHECKOUT_PERSISTENCE_PROVIDER
+    value: "redis"
+  - name: RETAIL_CHECKOUT_PERSISTENCE_REDIS_URL
+    value: "redis://checkout-redis:6379"
+  - name: RETAIL_CHECKOUT_ENDPOINTS_ORDERS
+    value: "http://orders.orders-dev.svc.cluster.local:8080"
 
 resources:
   requests:
     cpu: "100m"
-    memory: "256Mi"           # Node.js is lighter than Java
+    memory: "256Mi"
   limits:
     memory: "512Mi"
 
@@ -35,3 +43,13 @@ service:
 
 serviceAccount:
   annotations: {}
+
+# Redis companion container for dev
+# From docker-compose: checkout-redis service, image redis:6.0-alpine
+# In prod: disable this, use AWS ElastiCache Redis endpoint instead
+database:
+  enabled: true
+  name: checkout-redis
+  image: redis:6.0-alpine
+  port: 6379
+  env: []

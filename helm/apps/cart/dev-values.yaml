@@ -1,25 +1,39 @@
 # Cart service — Java/Spring Boot, shopping cart API
-# Stores cart data in DynamoDB
+# Database: DynamoDB Local (carts-db in same namespace)
+# Source: docker-compose cart + carts-db sections
 name: cart
 
 image:
   repository: public.ecr.aws/aws-containers/retail-store-sample-cart
-  tag: "0.8.3"
+  tag: "1.4.0"
 
 replicas: 1
-
 port: 8080
 
 healthCheck:
-  path: /actuator/health     # Spring Boot Actuator
+  path: /actuator/health
   livenessDelay: 60
   readinessDelay: 30
 
+# Env vars from docker-compose:
+#   RETAIL_CART_PERSISTENCE_PROVIDER=dynamodb
+#   RETAIL_CART_PERSISTENCE_DYNAMODB_ENDPOINT=http://carts-db:8000
+#   RETAIL_CART_PERSISTENCE_DYNAMODB_CREATE_TABLE=true
+#   AWS_ACCESS_KEY_ID=key (dummy, DynamoDB Local doesn't check)
+#   AWS_SECRET_ACCESS_KEY=dummy
+#
+# "carts-db" works because database Service is in same namespace (cart-dev)
 env:
-  - name: CARTS_DYNAMODB_TABLENAME
-    value: "retail-store-cart-dev"
-  # DynamoDB endpoint configured via Pod Identity — no keys in env vars
-  # The cart service auto-discovers DynamoDB via AWS SDK default credential chain
+  - name: RETAIL_CART_PERSISTENCE_PROVIDER
+    value: "dynamodb"
+  - name: RETAIL_CART_PERSISTENCE_DYNAMODB_ENDPOINT
+    value: "http://carts-db:8000"
+  - name: RETAIL_CART_PERSISTENCE_DYNAMODB_CREATE_TABLE
+    value: "true"
+  - name: AWS_ACCESS_KEY_ID
+    value: "key"
+  - name: AWS_SECRET_ACCESS_KEY
+    value: "dummy"
 
 resources:
   requests:
@@ -34,5 +48,13 @@ service:
 
 serviceAccount:
   annotations: {}
-  # Pod Identity annotation will be added when IAM role is created:
-  # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/retail-store-cart-dev
+
+# DynamoDB Local companion container for dev
+# From docker-compose: carts-db service, image amazon/dynamodb-local
+# In prod: disable this, use real AWS DynamoDB (no endpoint needed, SDK auto-discovers)
+database:
+  enabled: true
+  name: carts-db
+  image: amazon/dynamodb-local:1.20.0
+  port: 8000
+  env: []

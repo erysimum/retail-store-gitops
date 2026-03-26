@@ -1,0 +1,40 @@
+{{- if .Values.database.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.database.name }}
+  labels:
+    app: {{ .Values.database.name }}
+    app.kubernetes.io/part-of: retail-store
+    app.kubernetes.io/component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.database.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.database.name }}
+    spec:
+      containers:
+        - name: {{ .Values.database.name }}
+          image: {{ .Values.database.image }}
+          ports:
+            - containerPort: {{ .Values.database.port }}
+          {{- if .Values.database.env }}
+          env:
+            {{- range .Values.database.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if .Values.database.volumeMounts }}
+          volumeMounts:
+            {{- toYaml .Values.database.volumeMounts | nindent 12 }}
+          {{- end }}
+      {{- if .Values.database.volumes }}
+      volumes:
+        {{- toYaml .Values.database.volumes | nindent 8 }}
+      {{- end }}
+{{- end }}

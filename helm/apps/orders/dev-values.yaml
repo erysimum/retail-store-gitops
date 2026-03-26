@@ -1,28 +1,43 @@
 # Orders service — Java/Spring Boot, order management
-# Connects to: PostgreSQL (RDS), RabbitMQ (Amazon MQ or in-cluster)
+# Database: PostgreSQL (orders-db in same namespace)
+# Source: docker-compose orders + orders-db sections
+#
+# NOTE: docker-compose also has RabbitMQ for messaging.
+# Skipping RabbitMQ for now — orders should work without it for basic dev.
+# We'll add RabbitMQ when we need order notifications.
 name: orders
 
 image:
   repository: public.ecr.aws/aws-containers/retail-store-sample-orders
-  tag: "0.8.3"
+  tag: "1.4.0"
 
 replicas: 1
-
 port: 8080
 
 healthCheck:
-  path: /actuator/health     # Spring Boot Actuator
+  path: /actuator/health
   livenessDelay: 60
   readinessDelay: 30
 
+# Env vars from docker-compose:
+#   RETAIL_ORDERS_PERSISTENCE_PROVIDER=postgres
+#   RETAIL_ORDERS_PERSISTENCE_ENDPOINT=orders-db:5432
+#   RETAIL_ORDERS_PERSISTENCE_NAME=orders
+#   RETAIL_ORDERS_PERSISTENCE_USERNAME=orders_user
+#   RETAIL_ORDERS_PERSISTENCE_PASSWORD=${DB_PASSWORD}
+#
+# "orders-db" is in same namespace (orders-dev) — short hostname works
 env:
-  - name: SPRING_PROFILES_ACTIVE
-    value: "default"
-  # DB and RabbitMQ endpoints will be configured when infra is provisioned
-  # - name: SPRING_DATASOURCE_URL
-  #   value: "jdbc:postgresql://rds-endpoint:5432/orders"
-  # - name: SPRING_RABBITMQ_HOST
-  #   value: "rabbitmq-endpoint"
+  - name: RETAIL_ORDERS_PERSISTENCE_PROVIDER
+    value: "postgres"
+  - name: RETAIL_ORDERS_PERSISTENCE_ENDPOINT
+    value: "orders-db:5432"
+  - name: RETAIL_ORDERS_PERSISTENCE_NAME
+    value: "orders"
+  - name: RETAIL_ORDERS_PERSISTENCE_USERNAME
+    value: "orders_user"
+  - name: RETAIL_ORDERS_PERSISTENCE_PASSWORD
+    value: "password"
 
 resources:
   requests:
@@ -37,3 +52,19 @@ service:
 
 serviceAccount:
   annotations: {}
+
+# PostgreSQL companion container for dev
+# From docker-compose: orders-db service, image postgres:16.1
+# In prod: disable this, use AWS RDS PostgreSQL endpoint instead
+database:
+  enabled: true
+  name: orders-db
+  image: postgres:16.1
+  port: 5432
+  env:
+    - name: POSTGRES_PASSWORD
+      value: "password"
+    - name: POSTGRES_DB
+      value: "orders"
+    - name: POSTGRES_USER
+      value: "orders_user"

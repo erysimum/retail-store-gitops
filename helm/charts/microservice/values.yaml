@@ -59,3 +59,15 @@ ingress:
   annotations: {}
   hosts: []
   tls: []
+
+  # Database companion container
+# Enable in dev to deploy a database pod alongside the app.
+# Disable in prod — use AWS managed services (RDS, ElastiCache) instead.
+database:
+  enabled: false
+  name: ""
+  image: ""
+  port: 0
+  env: []
+  volumeMounts: []
+  volumes: []
