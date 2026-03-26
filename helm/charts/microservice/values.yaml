@@ -24,8 +24,6 @@ healthCheck:
 
 # Environment variables passed to the container
 env: []
-  # - name: SOME_VAR
-  #   value: "some-value"
 
 # Resource requests and limits
 # NOTE: No CPU limit — intentional. CPU is compressible,
@@ -52,7 +50,6 @@ volumes: []
 
 # Ingress configuration
 # Only enable for services that need external access (UI)
-# Backend services (catalog, cart, checkout, orders) stay as ClusterIP
 ingress:
   enabled: false
   className: ""
@@ -60,7 +57,7 @@ ingress:
   hosts: []
   tls: []
 
-  # Database companion container
+# Database companion container
 # Enable in dev to deploy a database pod alongside the app.
 # Disable in prod — use AWS managed services (RDS, ElastiCache) instead.
 database:
@@ -69,5 +66,9 @@ database:
   image: ""
   port: 0
   env: []
+  # Health check for database container
+  # If command is provided: uses exec probe (e.g., mysqladmin ping, redis-cli ping)
+  # If no command: uses tcpSocket probe on database.port
+  healthCheck: {}
   volumeMounts: []
   volumes: []

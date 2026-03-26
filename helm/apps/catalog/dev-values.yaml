@@ -15,13 +15,7 @@ healthCheck:
   livenessDelay: 15
   readinessDelay: 5
 
-# Env vars from docker-compose:
-#   RETAIL_CATALOG_PERSISTENCE_PROVIDER=mysql
-#   RETAIL_CATALOG_PERSISTENCE_ENDPOINT=catalog-db:3306
-#   RETAIL_CATALOG_PERSISTENCE_PASSWORD=${DB_PASSWORD}
-#
-# "catalog-db" works as hostname because the database Service
-# is in the SAME namespace (catalog-dev). No full DNS needed.
+# Env vars from docker-compose
 env:
   - name: RETAIL_CATALOG_PERSISTENCE_PROVIDER
     value: "mysql"
@@ -45,8 +39,7 @@ serviceAccount:
   annotations: {}
 
 # MariaDB companion container for dev
-# From docker-compose: catalog-db service, image mariadb:10.9
-# In prod: disable this, use RDS MySQL endpoint instead
+# Health check from docker-compose: mysqladmin ping
 database:
   enabled: true
   name: catalog-db
@@ -63,3 +56,15 @@ database:
       value: "catalog_user"
     - name: MYSQL_PASSWORD
       value: "password"
+  healthCheck:
+    command:
+      - mysqladmin
+      - ping
+      - -h
+      - localhost
+      - -u
+      - catalog_user
+      - -ppassword
+    initialDelay: 30
+    period: 10
+    timeout: 5

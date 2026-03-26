@@ -15,13 +15,7 @@ healthCheck:
   livenessDelay: 20
   readinessDelay: 10
 
-# Env vars from docker-compose:
-#   RETAIL_CHECKOUT_PERSISTENCE_PROVIDER=redis
-#   RETAIL_CHECKOUT_PERSISTENCE_REDIS_URL=redis://checkout-redis:6379
-#   RETAIL_CHECKOUT_ENDPOINTS_ORDERS=http://orders:8080
-#
-# "checkout-redis" is in same namespace (checkout-dev) — short hostname works
-# Orders is in orders-dev namespace — needs full Kubernetes DNS
+# Env vars from docker-compose
 env:
   - name: RETAIL_CHECKOUT_PERSISTENCE_PROVIDER
     value: "redis"
@@ -45,11 +39,17 @@ serviceAccount:
   annotations: {}
 
 # Redis companion container for dev
-# From docker-compose: checkout-redis service, image redis:6.0-alpine
-# In prod: disable this, use AWS ElastiCache Redis endpoint instead
+# Health check from docker-compose: redis-cli ping
 database:
   enabled: true
   name: checkout-redis
   image: redis:6.0-alpine
   port: 6379
   env: []
+  healthCheck:
+    command:
+      - redis-cli
+      - ping
+    initialDelay: 5
+    period: 5
+    timeout: 3

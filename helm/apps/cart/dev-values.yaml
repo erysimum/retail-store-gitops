@@ -15,14 +15,7 @@ healthCheck:
   livenessDelay: 60
   readinessDelay: 30
 
-# Env vars from docker-compose:
-#   RETAIL_CART_PERSISTENCE_PROVIDER=dynamodb
-#   RETAIL_CART_PERSISTENCE_DYNAMODB_ENDPOINT=http://carts-db:8000
-#   RETAIL_CART_PERSISTENCE_DYNAMODB_CREATE_TABLE=true
-#   AWS_ACCESS_KEY_ID=key (dummy, DynamoDB Local doesn't check)
-#   AWS_SECRET_ACCESS_KEY=dummy
-#
-# "carts-db" works because database Service is in same namespace (cart-dev)
+# Env vars from docker-compose
 env:
   - name: RETAIL_CART_PERSISTENCE_PROVIDER
     value: "dynamodb"
@@ -50,11 +43,16 @@ serviceAccount:
   annotations: {}
 
 # DynamoDB Local companion container for dev
-# From docker-compose: carts-db service, image amazon/dynamodb-local
-# In prod: disable this, use real AWS DynamoDB (no endpoint needed, SDK auto-discovers)
+# Health check: TCP socket on port 8000 (no CLI tool available)
+# docker-compose uses "exit 0" — DynamoDB Local has no health endpoint
 database:
   enabled: true
   name: carts-db
   image: amazon/dynamodb-local:1.20.0
   port: 8000
   env: []
+  healthCheck:
+    initialDelay: 10
+    period: 10
+    timeout: 5
+    # No command = template uses tcpSocket on database.port (8000)
