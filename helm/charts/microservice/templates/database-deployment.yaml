@@ -29,6 +29,34 @@ spec:
               value: {{ .value | quote }}
             {{- end }}
           {{- end }}
+          {{- if .Values.database.healthCheck }}
+          readinessProbe:
+            {{- if .Values.database.healthCheck.command }}
+            exec:
+              command:
+                {{- toYaml .Values.database.healthCheck.command | nindent 16 }}
+            {{- else }}
+            tcpSocket:
+              port: {{ .Values.database.port }}
+            {{- end }}
+            initialDelaySeconds: {{ .Values.database.healthCheck.initialDelay | default 10 }}
+            periodSeconds: {{ .Values.database.healthCheck.period | default 10 }}
+            timeoutSeconds: {{ .Values.database.healthCheck.timeout | default 5 }}
+            failureThreshold: 3
+          livenessProbe:
+            {{- if .Values.database.healthCheck.command }}
+            exec:
+              command:
+                {{- toYaml .Values.database.healthCheck.command | nindent 16 }}
+            {{- else }}
+            tcpSocket:
+              port: {{ .Values.database.port }}
+            {{- end }}
+            initialDelaySeconds: {{ .Values.database.healthCheck.initialDelay | default 30 }}
+            periodSeconds: {{ .Values.database.healthCheck.period | default 10 }}
+            timeoutSeconds: {{ .Values.database.healthCheck.timeout | default 5 }}
+            failureThreshold: 3
+          {{- end }}
           {{- if .Values.database.volumeMounts }}
           volumeMounts:
             {{- toYaml .Values.database.volumeMounts | nindent 12 }}
