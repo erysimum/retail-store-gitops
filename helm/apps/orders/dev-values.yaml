@@ -68,3 +68,11 @@ database:
     initialDelay: 15
     period: 10
     timeout: 5
+
+    
+persistence:
+  enabled: true
+  storageClass: "gp3"
+  size: "1Gi"
+  mountPath: "/var/lib/postgresql/data"
+  name: "orders-db-data"    

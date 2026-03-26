@@ -1,12 +1,12 @@
+# retail-store-gitops/helm/charts/microservice/templates/database-deployment.yaml
 {{- if .Values.database.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.database.name }}
   labels:
+    {{- include "microservice.labels" . | nindent 4 }}
     app: {{ .Values.database.name }}
-    app.kubernetes.io/part-of: retail-store
-    app.kubernetes.io/component: database
 spec:
   replicas: 1
   selector:
@@ -24,45 +24,39 @@ spec:
             - containerPort: {{ .Values.database.port }}
           {{- if .Values.database.env }}
           env:
-            {{- range .Values.database.env }}
-            - name: {{ .name }}
-              value: {{ .value | quote }}
-            {{- end }}
+            {{- toYaml .Values.database.env | nindent 12 }}
           {{- end }}
           {{- if .Values.database.healthCheck }}
+          {{- if .Values.database.healthCheck.command }}
           readinessProbe:
-            {{- if .Values.database.healthCheck.command }}
             exec:
               command:
                 {{- toYaml .Values.database.healthCheck.command | nindent 16 }}
-            {{- else }}
-            tcpSocket:
-              port: {{ .Values.database.port }}
-            {{- end }}
-            initialDelaySeconds: {{ .Values.database.healthCheck.initialDelay | default 10 }}
-            periodSeconds: {{ .Values.database.healthCheck.period | default 10 }}
-            timeoutSeconds: {{ .Values.database.healthCheck.timeout | default 5 }}
-            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 5
           livenessProbe:
-            {{- if .Values.database.healthCheck.command }}
             exec:
               command:
                 {{- toYaml .Values.database.healthCheck.command | nindent 16 }}
-            {{- else }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          {{- else }}
+          readinessProbe:
             tcpSocket:
               port: {{ .Values.database.port }}
-            {{- end }}
-            initialDelaySeconds: {{ .Values.database.healthCheck.initialDelay | default 30 }}
-            periodSeconds: {{ .Values.database.healthCheck.period | default 10 }}
-            timeoutSeconds: {{ .Values.database.healthCheck.timeout | default 5 }}
-            failureThreshold: 3
+            initialDelaySeconds: 10
+            periodSeconds: 5
           {{- end }}
-          {{- if .Values.database.volumeMounts }}
+          {{- end }}
+          {{- if .Values.persistence.enabled }}
           volumeMounts:
-            {{- toYaml .Values.database.volumeMounts | nindent 12 }}
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
           {{- end }}
-      {{- if .Values.database.volumes }}
+      {{- if .Values.persistence.enabled }}
       volumes:
-        {{- toYaml .Values.database.volumes | nindent 8 }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.name | default (printf "%s-data" .Values.name) }}
       {{- end }}
 {{- end }}

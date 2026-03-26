@@ -72,3 +72,12 @@ database:
   healthCheck: {}
   volumeMounts: []
   volumes: []
+
+# Add to retail-store-gitops/helm/charts/microservice/values.yaml
+persistence:
+  enabled: false
+  storageClass: "gp3"
+  size: "1Gi"
+  accessMode: "ReadWriteOnce"
+  mountPath: "/data"
+  name: ""  

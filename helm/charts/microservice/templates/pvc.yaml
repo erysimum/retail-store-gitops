@@ -1,0 +1,16 @@
+# retail-store-gitops/helm/charts/microservice/templates/pvc.yaml
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.persistence.name | default (printf "%s-data" .Values.name) }}
+  labels:
+    {{- include "microservice.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode | default "ReadWriteOnce" }}
+  storageClassName: {{ .Values.persistence.storageClass | default "gp3" }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size | default "1Gi" }}
+{{- end }}
