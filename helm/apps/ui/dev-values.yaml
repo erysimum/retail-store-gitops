@@ -1,27 +1,31 @@
 # UI service — Java/Spring Boot, serves web frontend
-# Calls: catalog, cart, checkout
+# Calls: catalog, cart, checkout, orders
+# Database: NONE (UI is a frontend, calls backend services)
 name: ui
 
 image:
   repository: public.ecr.aws/aws-containers/retail-store-sample-ui
-  tag: "0.8.3"
+  tag: "1.4.0"
 
 replicas: 1
-
 port: 8080
 
 healthCheck:
-  path: /actuator/health     # Spring Boot Actuator
-  livenessDelay: 60           # JVM warmup + Spring context initialization
+  path: /actuator/health
+  livenessDelay: 60
   readinessDelay: 30
 
+# Env vars from docker-compose: RETAIL_UI_ENDPOINTS_*
+# These point to backend services via Kubernetes DNS (cross-namespace)
 env:
-  - name: ENDPOINTS_CATALOG
-    value: "http://catalog.catalog-dev.svc.cluster.local"
-  - name: ENDPOINTS_CARTS
-    value: "http://cart.cart-dev.svc.cluster.local"
-  - name: ENDPOINTS_CHECKOUT
-    value: "http://checkout.checkout-dev.svc.cluster.local"
+  - name: RETAIL_UI_ENDPOINTS_CATALOG
+    value: "http://catalog.catalog-dev.svc.cluster.local:8080"
+  - name: RETAIL_UI_ENDPOINTS_CARTS
+    value: "http://cart.cart-dev.svc.cluster.local:8080"
+  - name: RETAIL_UI_ENDPOINTS_CHECKOUT
+    value: "http://checkout.checkout-dev.svc.cluster.local:8080"
+  - name: RETAIL_UI_ENDPOINTS_ORDERS
+    value: "http://orders.orders-dev.svc.cluster.local:8080"
 
 resources:
   requests:
@@ -37,7 +41,6 @@ service:
 serviceAccount:
   annotations: {}
 
-# Ingress — expose UI via NGINX Ingress Controller + NLB
 ingress:
   enabled: true
   className: external-nginx
@@ -47,8 +50,7 @@ ingress:
         - path: /
           pathType: Prefix
   tls: []
-  # TLS will be added later when cert-manager is installed:
-  # tls:
-  #   - hosts:
-  #       - retail-store.example.com
-  #     secretName: retail-store-tls
+
+# UI has no database
+database:
+  enabled: false
