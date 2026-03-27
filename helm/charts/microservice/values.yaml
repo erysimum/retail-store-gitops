@@ -38,7 +38,7 @@ resources:
 # Service configuration
 service:
   type: ClusterIP
-  port: 80
+  port: 8080
 
 # ServiceAccount for Pod Identity / IRSA
 serviceAccount:
