@@ -29,7 +29,7 @@ spec:
               service:
                 name: {{ $.Values.name }}
                 port:
-                  number: {{ $.Values.service.port | default 80 }}
+                  number: {{ $.Values.service.port | default 8080 }}
           {{- end }}
     {{- end }}
 {{- end }}
