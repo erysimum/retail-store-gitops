@@ -4,8 +4,8 @@
 name: catalog
 
 image:
-  repository: public.ecr.aws/aws-containers/retail-store-sample-catalog
-  tag: "1.4.0"
+  repository: 211125312142.dkr.ecr.ap-southeast-2.amazonaws.com/retail-store/catalog
+  tag: "sha-b0b2b3e71560890fcb2a5a434c148f997567e2aa"
 
 replicas: 1
 port: 8080

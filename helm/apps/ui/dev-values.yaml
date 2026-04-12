@@ -4,8 +4,8 @@
 name: ui
 
 image:
-  repository: public.ecr.aws/aws-containers/retail-store-sample-ui
-  tag: "1.4.0"
+  repository: 211125312142.dkr.ecr.ap-southeast-2.amazonaws.com/retail-store/ui
+  tag: "sha-c607f7954d636fa3512bbdc8c187ab37c0ab42bf"
 
 replicas: 1
 port: 8080
