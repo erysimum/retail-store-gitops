@@ -1,0 +1,92 @@
+# ServiceMonitor — tells Prometheus to scrape retail store services
+# Prometheus Operator watches for these CRs and auto-configures scrape targets
+#
+# WHY one per service (not one for all):
+#   - Each service has a different metrics path (/metrics vs /actuator/prometheus)
+#   - Each service is in a different namespace
+#   - Easier to debug when one service's metrics are broken
+---
+# Catalog (Go/Gin) — exposes /metrics via go-gin-prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: catalog
+  namespace: catalog-dev
+  labels:
+    app: catalog
+spec:
+  selector:
+    matchLabels:
+      app: catalog          # matches the Service's labels from your Helm chart
+  endpoints:
+    - port: http            # matches the port NAME in your Service spec
+      path: /metrics
+      interval: 30s
+---
+# UI (Java/Spring Boot) — exposes /actuator/prometheus via Micrometer
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ui
+  namespace: ui-dev
+  labels:
+    app: ui
+spec:
+  selector:
+    matchLabels:
+      app: ui
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 30s
+---
+# Cart (Java/Spring Boot) — exposes /actuator/prometheus via Micrometer
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cart
+  namespace: cart-dev
+  labels:
+    app: cart
+spec:
+  selector:
+    matchLabels:
+      app: cart
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 30s
+---
+# Checkout (Node.js/NestJS) — likely /metrics via prom-client
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: checkout
+  namespace: checkout-dev
+  labels:
+    app: checkout
+spec:
+  selector:
+    matchLabels:
+      app: checkout
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+---
+# Orders (Java/Spring Boot) — exposes /actuator/prometheus via Micrometer
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: orders
+  namespace: orders-dev
+  labels:
+    app: orders
+spec:
+  selector:
+    matchLabels:
+      app: orders
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 30s
