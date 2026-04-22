@@ -5,7 +5,7 @@ name: catalog
 
 image:
   repository: 211125312142.dkr.ecr.ap-southeast-2.amazonaws.com/retail-store/catalog
-  tag: "sha-c607f7954d636fa3512bbdc8c187ab37c0ab42bf"
+  tag: "sha-b896132d38318096ed8ff0d6403909b51f25a276"
 
 replicas: 1
 port: 8080
