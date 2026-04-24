@@ -1,0 +1,13 @@
+# retail-store-gitops/observability/dashboards/red-metrics-cm.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: red-metrics-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"    # ← sidecar watches for this label
+data:
+  red-metrics.json: |
+    {
+      ... YOUR ENTIRE DASHBOARD JSON HERE (indented 4 spaces) ...
+    }
