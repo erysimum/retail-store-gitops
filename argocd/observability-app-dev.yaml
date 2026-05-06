@@ -1,0 +1,35 @@
+# ArgoCD Application — Observability (SLOs + Alerts)
+# Watches the entire observability/ folder. Anything we add gets auto-applied.
+#
+# Bootstrap (manual, once after cluster is up):
+#   kubectl apply -f argocd/observability-app-dev.yaml
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/erysimum/retail-store-gitops
+    targetRevision: main
+    # We use directory.recurse so it picks up SLOs AND alerts AND runbooks
+    # (runbooks are markdown so they're ignored by ArgoCD safely)
+    path: observability
+    directory:
+      recurse: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
