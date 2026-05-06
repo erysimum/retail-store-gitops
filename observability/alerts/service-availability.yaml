@@ -1,0 +1,35 @@
+# PrometheusRule: service-availability
+#
+# WHAT'S IN HERE: Only ServiceDown alert.
+# WHY: Pyrra now generates all error-rate-based alerts (much smarter,
+#      multi-window burn rate). But Pyrra can't detect "service is
+#      completely unreachable" — that's not an SLO breach (no SLI to
+#      measure when there are zero requests). We need this manually.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: service-availability
+  namespace: monitoring
+  labels:
+    app: retail-store
+    role: alert-rules
+spec:
+  groups:
+    - name: retail-store.availability
+      interval: 30s
+
+      rules:
+        # Service Prometheus cannot scrape at all
+        - alert: ServiceDown
+          expr: up{job=~"ui|cart|orders|catalog|checkout"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            service: "{{ $labels.job }}"
+          annotations:
+            summary: "{{ $labels.job }} service is DOWN"
+            description: |
+              Prometheus cannot scrape {{ $labels.job }} metrics for 2+ minutes.
+              Service is either crashed, unreachable, or pod is not ready.
+            runbook_url: "https://github.com/erysimum/retail-store-gitops/blob/main/observability/runbooks/service-down.md"
