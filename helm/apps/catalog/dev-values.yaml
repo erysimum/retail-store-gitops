@@ -68,3 +68,14 @@ database:
     initialDelay: 30
     period: 10
     timeout: 5
+
+
+
+hpa:
+  enabled: true
+  minReplicas: 1     
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 50
+  # We use 50% target (not 70%) so HPA reacts on smaller load increases.
+  
+ 

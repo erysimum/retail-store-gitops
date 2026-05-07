@@ -1,0 +1,56 @@
+{{- if .Values.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.name }}
+  labels:
+    {{- include "microservice.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.name }}
+
+  minReplicas: {{ .Values.hpa.minReplicas | default 1 }}
+  maxReplicas: {{ .Values.hpa.maxReplicas | default 5 }}
+
+  metrics:
+    {{- if .Values.hpa.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.hpa.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.hpa.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.hpa.targetMemoryUtilizationPercentage }}
+    {{- end }}
+
+  # Behavior tuning — control how aggressive scale up/down is
+  # Defaults are sensible: scale up fast, scale down slow
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: {{ .Values.hpa.scaleUpStabilizationSeconds | default 30 }}
+      policies:
+        - type: Percent
+          value: 100        # double the pods if needed
+          periodSeconds: 30
+        - type: Pods
+          value: 2          # but at most 2 new pods every 30s
+          periodSeconds: 30
+      selectPolicy: Max     # use whichever policy adds MORE pods (faster)
+    scaleDown:
+      # Wait 5 minutes after CPU drops before removing pods
+      # Prevents flapping during temporary lulls
+      stabilizationWindowSeconds: {{ .Values.hpa.scaleDownStabilizationSeconds | default 300 }}
+      policies:
+        - type: Percent
+          value: 50         # remove at most 50% of pods at a time
+          periodSeconds: 60
+{{- end }}
