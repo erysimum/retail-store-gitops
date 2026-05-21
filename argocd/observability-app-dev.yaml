@@ -22,7 +22,7 @@ spec:
     path: observability
     directory:
       recurse: true
-      exclude: '{dashboards/**,runbooks/**}'
+      exclude: '{runbooks/**,*.md,*.json}'
 
   destination:
     server: https://kubernetes.default.svc
