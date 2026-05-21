@@ -1,0 +1,21 @@
+
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: catalog-fault-injection
+  namespace: catalog-dev
+  labels:
+    app.kubernetes.io/part-of: retail-store
+    app.kubernetes.io/component: chaos-engineering
+spec:
+  hosts:
+    - catalog                  # short name — implicitly catalog.catalog-dev.svc.cluster.local
+  http:
+    - fault:
+        abort:
+          percentage:
+            value: 3.0         # 3% of requests fail
+          httpStatus: 500      # ...with HTTP 500 Internal Server Error
+      route:
+        - destination:
+            host: catalog      # remaining 97% route to catalog normally
