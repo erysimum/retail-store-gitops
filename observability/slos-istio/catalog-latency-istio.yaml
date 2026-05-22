@@ -1,0 +1,22 @@
+# SERVICE-LEVEL LATENCY SLO — Catalog
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  name: catalog-latency-istio
+  namespace: monitoring
+  labels:
+    pyrra.dev/team: platform
+    pyrra.dev/tier: service
+    pyrra.dev/service: catalog
+    pyrra.dev/source: istio
+spec:
+  target: "99"
+  window: 1d
+  description: "99% of catalog requests complete in under 250ms"
+
+  indicator:
+    latency:
+      success:
+        metric: istio_request_duration_milliseconds_bucket{destination_service_name="catalog",destination_service_namespace="catalog-dev",reporter="destination",le="250"}
+      total:
+        metric: istio_request_duration_milliseconds_count{destination_service_name="catalog",destination_service_namespace="catalog-dev",reporter="destination"}

@@ -1,0 +1,21 @@
+# SYSTEM-LEVEL LATENCY SLO — measured at UI
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  name: system-latency-istio
+  namespace: monitoring
+  labels:
+    pyrra.dev/team: platform
+    pyrra.dev/tier: system
+    pyrra.dev/source: istio
+spec:
+  target: "99"
+  window: 1d
+  description: "99% of UI requests complete in under 1000ms (user-facing latency)"
+
+  indicator:
+    latency:
+      success:
+        metric: istio_request_duration_milliseconds_bucket{destination_service_name="ui",destination_service_namespace="ui-dev",reporter="destination",le="1000"}
+      total:
+        metric: istio_request_duration_milliseconds_count{destination_service_name="ui",destination_service_namespace="ui-dev",reporter="destination"}
