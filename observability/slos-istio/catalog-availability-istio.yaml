@@ -1,0 +1,22 @@
+# SERVICE-LEVEL AVAILABILITY SLO — Catalog (Istio metrics)
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  name: catalog-availability-istio
+  namespace: monitoring
+  labels:
+    pyrra.dev/team: platform
+    pyrra.dev/tier: service
+    pyrra.dev/service: catalog
+    pyrra.dev/source: istio
+spec:
+  target: "99.95"
+  window: 1d
+  description: "Catalog service availability via Envoy sidecar (Istio metrics)"
+
+  indicator:
+    ratio:
+      errors:
+        metric: istio_requests_total{destination_service_name="catalog",destination_service_namespace="catalog-dev",reporter="destination",response_code=~"5.."}
+      total:
+        metric: istio_requests_total{destination_service_name="catalog",destination_service_namespace="catalog-dev",reporter="destination"}
