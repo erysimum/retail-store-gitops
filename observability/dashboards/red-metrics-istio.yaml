@@ -1,0 +1,130 @@
+# Parameterized RED-metrics dashboard — Istio metrics edition.
+# Single dashboard covers all 5 services via $service template variable.
+#
+# All queries use istio_requests_total + istio_request_duration_milliseconds_bucket
+# emitted by Envoy sidecars. Same metric names regardless of language
+# (Java/Spring Boot, Go/Gin, Node.js) — no more or-queries across
+# language-specific instrumentation.
+#
+# Sidecar exclusion: database pods are excluded from the mesh via the
+# sidecar.istio.io/inject=false annotation on the Helm database template,
+# so this dashboard naturally only shows app traffic.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: red-metrics-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/part-of: retail-store
+    app.kubernetes.io/component: observability
+data:
+  red-metrics.json: |
+    {
+      "annotations": {"list": []},
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "title": "Request Rate (RPS) — $service",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": {"mode": "palette-classic"}
+            }
+          },
+          "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+          "id": 1,
+          "targets": [
+            {
+              "expr": "sum(rate(istio_requests_total{destination_service_name=\"$service\",reporter=\"destination\"}[$__rate_interval]))",
+              "legendFormat": "rps",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "title": "Error Rate (5xx) — $service",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "color": {"mode": "palette-classic"},
+              "min": 0,
+              "max": 1
+            }
+          },
+          "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+          "id": 2,
+          "targets": [
+            {
+              "expr": "sum(rate(istio_requests_total{destination_service_name=\"$service\",reporter=\"destination\",response_code=~\"5..\"}[$__rate_interval])) / sum(rate(istio_requests_total{destination_service_name=\"$service\",reporter=\"destination\"}[$__rate_interval]))",
+              "legendFormat": "error rate",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "title": "Latency (P50 / P95 / P99) — $service",
+          "type": "timeseries",
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ms",
+              "color": {"mode": "palette-classic"}
+            }
+          },
+          "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+          "id": 3,
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\",reporter=\"destination\"}[$__rate_interval])))",
+              "legendFormat": "p50",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\",reporter=\"destination\"}[$__rate_interval])))",
+              "legendFormat": "p95",
+              "refId": "B"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\",reporter=\"destination\"}[$__rate_interval])))",
+              "legendFormat": "p99",
+              "refId": "C"
+            }
+          ]
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 39,
+      "tags": ["retail-store", "RED", "istio", "auto-imported"],
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "label": "Service",
+            "type": "query",
+            "datasource": {"type": "prometheus", "uid": "prometheus"},
+            "query": "label_values(istio_requests_total{reporter=\"destination\",destination_service_namespace=~\".*-dev\"}, destination_service_name)",
+            "refresh": 2,
+            "includeAll": false,
+            "multi": false,
+            "current": {"text": "ui", "value": "ui"}
+          }
+        ]
+      },
+      "time": {"from": "now-30m", "to": "now"},
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Retail Store — RED metrics (Istio)",
+      "uid": "retail-store-red",
+      "version": 2,
+      "weekStart": ""
+    }
