@@ -1,0 +1,22 @@
+# SERVICE-LEVEL LATENCY SLO — Orders
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  name: orders-latency-istio
+  namespace: monitoring
+  labels:
+    pyrra.dev/team: platform
+    pyrra.dev/tier: service
+    pyrra.dev/service: orders
+    pyrra.dev/source: istio
+spec:
+  target: "99"
+  window: 1d
+  description: "99% of orders requests complete in under 500ms (Postgres write-bound)"
+
+  indicator:
+    latency:
+      success:
+        metric: istio_request_duration_milliseconds_bucket{destination_service_name="orders",destination_service_namespace="orders-dev",reporter="destination",le="500"}
+      total:
+        metric: istio_request_duration_milliseconds_count{destination_service_name="orders",destination_service_namespace="orders-dev",reporter="destination"}
