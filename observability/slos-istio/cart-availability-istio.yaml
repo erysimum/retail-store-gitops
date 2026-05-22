@@ -1,0 +1,30 @@
+# SERVICE-LEVEL AVAILABILITY SLO — Cart (Istio metrics)
+#
+# Measured at cart's Envoy sidecar (reporter=destination).
+#
+# COMPARE WITH: slos/cart-availability.yaml (Spring Boot metric)
+#
+# TARGET: 99.9% availability over 1 day
+# ERROR BUDGET: 86.4 seconds of failure allowed per day
+---
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  name: cart-availability-istio
+  namespace: monitoring
+  labels:
+    pyrra.dev/team: platform
+    pyrra.dev/tier: service
+    pyrra.dev/service: cart
+    pyrra.dev/source: istio
+spec:
+  target: "99.9"
+  window: 1d
+  description: "Cart service availability via Envoy sidecar (Istio metrics)"
+
+  indicator:
+    ratio:
+      errors:
+        metric: istio_requests_total{destination_service_name="cart",destination_service_namespace="cart-dev",reporter="destination",response_code=~"5.."}
+      total:
+        metric: istio_requests_total{destination_service_name="cart",destination_service_namespace="cart-dev",reporter="destination"}
