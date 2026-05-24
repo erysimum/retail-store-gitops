@@ -1,0 +1,49 @@
+# Envoy sidecar metrics scrape — istio_requests_total, istio_request_duration_milliseconds, etc
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: istio-envoy-stats
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack  ##default name of is the release name of kube-prometheus-stack
+    app.kubernetes.io/part-of: retail-store
+    app.kubernetes.io/component: observability
+spec:
+  # Scrape pods in any of the 5 app namespaces
+  namespaceSelector:
+    matchNames:
+      - ui-dev
+      - catalog-dev
+      - cart-dev
+      - checkout-dev
+      - orders-dev
+
+  # Select all pods in those namespaces EXCEPT ones with explicit opt-out.
+  # This catches every app pod with an istio-proxy sidecar.
+  selector:
+    matchExpressions:
+      - key: istio-prometheus-ignore
+        operator: DoesNotExist
+
+  podMetricsEndpoints:
+    - path: /stats/prometheus
+      interval: 15s
+      # Relabeling does two important things:
+      # 1. KEEP only the istio-proxy container (skip the app container — we already
+      #    scrape that via the existing ServiceMonitors)
+      # 2. Target port 15090 on whatever the pod IP is
+      relabelings:
+        - action: keep
+          sourceLabels: [__meta_kubernetes_pod_container_name]
+          regex: istio-proxy
+        - action: replace
+          sourceLabels: [__address__]
+          regex: ([^:]+)(?::\d+)?
+          replacement: $1:15090
+          targetLabel: __address__
+        # Add useful labels so queries can filter on namespace/pod easily
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: namespace
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
