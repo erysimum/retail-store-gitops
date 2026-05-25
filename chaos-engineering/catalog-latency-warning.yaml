@@ -1,0 +1,36 @@
+# CHAOS — Catalog request delay, WARNING tier
+#
+# Delays 5% of requests by 500ms (well over the 250ms latency SLO
+# threshold). Calibrated to produce a ~5x burn rate against
+# catalog-latency-istio SLO (target 99% under 250ms).
+#
+# Tests the latency SLO independently of the availability SLO —
+# delayed requests still succeed (HTTP 200), they're just slow.
+# Catalog-availability stays GREEN; catalog-latency-istio burns.
+#
+# Expected alert routing: Slack #alerts warning only. No PagerDuty.
+#
+# Apply / remove:
+#   kubectl apply -f chaos-engineering/catalog-latency-warning.yaml
+#   kubectl delete -f chaos-engineering/catalog-latency-warning.yaml
+#
+# CANNOT run simultaneously with catalog-latency-critical.yaml.
+# CAN run simultaneously with catalog-abort-* (different metadata.name).
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: catalog-latency-fault
+  namespace: catalog-dev
+spec:
+  hosts:
+    - catalog
+  http:
+    - fault:
+        delay:
+          percentage:
+            value: 5
+          fixedDelay: 500ms
+      route:
+        - destination:
+            host: catalog

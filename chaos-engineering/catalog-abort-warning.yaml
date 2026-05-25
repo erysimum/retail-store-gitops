@@ -1,0 +1,31 @@
+# CHAOS — Catalog HTTP abort, WARNING tier
+#
+# Aborts 0.5% of requests with HTTP 500. Calibrated to produce a
+# ~5x burn rate against catalog-availability SLO (target 99.95%).
+#
+# Expected alert routing: Slack #alerts warning only. No PagerDuty.
+#
+# Apply / remove:
+#   kubectl apply -f chaos-engineering/catalog-abort-warning.yaml
+#   kubectl delete -f chaos-engineering/catalog-abort-warning.yaml
+#
+# CANNOT run simultaneously with catalog-abort-critical.yaml
+# (same metadata.name). Apply one at a time.
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: catalog-abort-fault
+  namespace: catalog-dev
+spec:
+  hosts:
+    - catalog
+  http:
+    - fault:
+        abort:
+          percentage:
+            value: 0.5
+          httpStatus: 500
+      route:
+        - destination:
+            host: catalog

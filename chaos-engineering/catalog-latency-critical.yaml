@@ -1,0 +1,37 @@
+# CHAOS — Catalog request delay, CRITICAL tier
+#
+# Delays 30% of requests by 2000ms. Calibrated to produce a
+# ~30x burn rate against catalog-latency-istio SLO (target 99%
+# under 250ms).
+#
+# Tests cascading latency: catalog slowdown should also impact
+# system-latency-istio (UI's response time depends on catalog),
+# so expect TWO latency SLOs burning simultaneously — drill-down
+# in Grafana shows the root cause at catalog.
+#
+# Expected alert routing: PagerDuty incident + Slack #alerts critical.
+#
+# Apply / remove:
+#   kubectl apply -f chaos-engineering/catalog-latency-critical.yaml
+#   kubectl delete -f chaos-engineering/catalog-latency-critical.yaml
+#
+# CANNOT run simultaneously with catalog-latency-warning.yaml.
+# CAN run simultaneously with catalog-abort-* for cascade demo.
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: catalog-latency-fault
+  namespace: catalog-dev
+spec:
+  hosts:
+    - catalog
+  http:
+    - fault:
+        delay:
+          percentage:
+            value: 30
+          fixedDelay: 2000ms
+      route:
+        - destination:
+            host: catalog
