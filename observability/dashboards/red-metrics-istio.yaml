@@ -9,6 +9,17 @@
 # Sidecar exclusion: database pods are excluded from the mesh via the
 # sidecar.istio.io/inject=false annotation on the Helm database template,
 # so this dashboard naturally only shows app traffic.
+#
+# Query design notes:
+# - Explicit [5m] rate window: $__rate_interval can resolve too short at
+#   small time ranges (e.g., ~10s for a 5-min view), shorter than the
+#   30s Prometheus scrape interval. Rate would return empty vector → panel
+#   shows "No data" even when metrics are flowing. [5m] gives ~10 scrape
+#   samples — stable, works at any time range.
+# - Error rate "or vector(0)": when no 5xx requests exist, the numerator
+#   returns empty vector. Empty / anything = empty → "No data" in panel.
+#   "or vector(0)" substitutes 0 when no 5xx series exist, so panel shows
+#   0% (the correct, intuitive result) instead of empty.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -43,7 +54,7 @@ data:
           "id": 1,
           "targets": [
             {
-              "expr": "sum(rate(istio_requests_total{destination_service_name=\"$service\",reporter=\"destination\"}[$__rate_interval]))",
+              "expr": "sum(rate(istio_requests_total{destination_service_name=\"$service\",reporter=\"destination\"}[5m]))",
               "legendFormat": "rps",
               "refId": "A"
             }
@@ -65,7 +76,7 @@ data:
           "id": 2,
           "targets": [
             {
-              "expr": "sum(rate(istio_requests_total{destination_service_name=\"$service\",reporter=\"destination\",response_code=~\"5..\"}[$__rate_interval])) / sum(rate(istio_requests_total{destination_service_name=\"$service\",reporter=\"destination\"}[$__rate_interval]))",
+              "expr": "(sum(rate(istio_requests_total{destination_service_name=\"$service\",reporter=\"destination\",response_code=~\"5..\"}[5m])) or vector(0)) / sum(rate(istio_requests_total{destination_service_name=\"$service\",reporter=\"destination\"}[5m]))",
               "legendFormat": "error rate",
               "refId": "A"
             }
@@ -85,17 +96,17 @@ data:
           "id": 3,
           "targets": [
             {
-              "expr": "histogram_quantile(0.50, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\",reporter=\"destination\"}[$__rate_interval])))",
+              "expr": "histogram_quantile(0.50, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\",reporter=\"destination\"}[5m])))",
               "legendFormat": "p50",
               "refId": "A"
             },
             {
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\",reporter=\"destination\"}[$__rate_interval])))",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\",reporter=\"destination\"}[5m])))",
               "legendFormat": "p95",
               "refId": "B"
             },
             {
-              "expr": "histogram_quantile(0.99, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\",reporter=\"destination\"}[$__rate_interval])))",
+              "expr": "histogram_quantile(0.99, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"$service\",reporter=\"destination\"}[5m])))",
               "legendFormat": "p99",
               "refId": "C"
             }
