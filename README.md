@@ -1,6 +1,6 @@
 # Retail Store Platform — GitOps
 
-This is the repo ArgoCD actually watches. It holds the Helm chart that deploys the five services, the ArgoCD config that wires everything together, and the observability layer: SLOs, dashboards, alert routing, and the Istio fault-injection files used for chaos testing.
+This is the repo ArgoCD actually watches. It holds the Helm chart that deploys the five services, the ArgoCD config that wires everything together, the observability layer (SLOs, dashboards, alert rules, scrape config, runbooks), and the Istio fault-injection files used for chaos testing.
 
 One of four repos. The cluster itself is built by **[retail-store-infra](https://github.com/erysimum/retail-store-infra)** — start there for the overview.
 
@@ -23,51 +23,67 @@ helm/
     └── orders/dev-values.yaml    # PostgreSQL companion
 
 argocd/
-├── platform-app-dev.yaml     # Application → watches the platform repo (Kustomize)
-└── apps-appset-dev.yaml      # ApplicationSet → generates the 5 service apps (Helm)
+├── platform-app-dev.yaml        # Application → platform repo (Kustomize)
+├── apps-appset-dev.yaml         # ApplicationSet → the 5 service apps (Helm)
+└── observability-app-dev.yaml   # Application → the observability stack
 
 observability/
-├── slos/                     # SLO definitions (Pyrra turns these into alerts)
-├── dashboards/               # Grafana dashboards as ConfigMaps
-├── alertmanager/             # routing config
-└── runbooks/                 # what to do when an alert fires
+├── slos-istio/        # SLO definitions (Pyrra turns these into alerts)
+├── alerts/            # Prometheus alert rules
+├── dashboards/        # Grafana dashboards as ConfigMaps
+├── servicemonitors/   # what Prometheus scrapes
+├── scrape-configs/    # extra scrape configuration
+└── runbooks/          # what to do when an alert fires
 
-chaos-engineering/                     # Istio fault-injection VirtualServices
+chaos-engineering/     # Istio fault-injection VirtualServices
+├── catalog-abort-warning.yaml     # 0.5% of requests → HTTP 500 (slow burn)
+├── catalog-abort-critical.yaml    # 3% of requests  → HTTP 500 (fast burn)
+├── catalog-latency-warning.yaml   # injected delay (slow burn)
+└── catalog-latency-critical.yaml  # injected delay (fast burn)
+
+loadtest/
+└── locust-deployment.yaml         # Locust load generator
 ```
 
 ---
 
 ## The one chart for everything
 
-There's a single Helm chart for all five services instead of five separate charts. Each service just brings its own `dev-values.yaml` to switch on the bits it needs. UI turns on the ingress; catalog, cart, checkout, and orders each turn on a database companion. 
+There's a single Helm chart for all five services instead of five separate charts. Each service just brings its own `dev-values.yaml` to switch on the bits it needs.
 ---
 
 ## How ArgoCD uses it
 
-Two files bootstrap the whole thing, applied once by hand:
+Three files bootstrap the whole thing, applied once by hand:
 
 ```bash
 kubectl apply -f argocd/platform-app-dev.yaml
 kubectl apply -f argocd/apps-appset-dev.yaml
+kubectl apply -f argocd/observability-app-dev.yaml
 ```
 
 - `platform-app-dev.yaml` points ArgoCD at the **[retail-store-platform](https://github.com/erysimum/retail-store-platform)** repo and applies the cluster policies first (sync-wave 0).
-- `apps-appset-dev.yaml` is an ApplicationSet that fans out into five Applications (`ui-dev`, `catalog-dev`, …), each rendering the shared chart with that service's values. These come up after the platform layer (sync-wave 1).
+- `apps-appset-dev.yaml` This ApplicationSet automatically creates the five application deployments (ui-dev, catalog-dev, and others), each using the same shared Helm chart with its own configuration. They are deployed after the core platform components are ready.(sync-wave 1).
+- `observability-app-dev.yaml` brings up the observability config: SLOs, alert rules, dashboards, and scrape config.
 
 From then on it's pure GitOps: edit a file, open a PR, merge, and ArgoCD reconciles. Self-heal is on, so manual `kubectl` edits get reverted.
 
 ---
 
-## Observability and chaos
+## Observability
 
-**SLOs.** Five availability SLOs (one per service plus a system-level one), all on a 1-day window so burn rate shows up within minutes during a demo. Pyrra reads these and generates the Prometheus recording and alert rules using Google's multi-window burn-rate method.
+**SLOs.** Availability SLOs (one per service plus a system-level one).
 
-**Dashboards as code.** Grafana dashboards are stored as ConfigMaps with the `grafana_dashboard` label, so Grafana's sidecar auto-imports them on every cluster spin-up. No manual re-import. The RED dashboard is a single parameterized dashboard with a `$service` dropdown that covers all five services.
+**Dashboards as code.** Grafana dashboards are stored as ConfigMaps with the `grafana_dashboard` label, so Grafana's sidecar auto-imports them on every cluster spin-up.
 
-**Alert routing.** Warnings go to Slack only. Criticals go to Slack and PagerDuty with a paging tag. 
+**Alert routing.** Warnings go to Slack only; criticals go to Slack and PagerDuty with a paging tag. 
+---
 
-**Fault injection.** The `chaos-engineering/` folder has two Istio VirtualServices for chaos testing without touching any code: a warning tier (0.5% of UI→catalog requests aborted, slow burn, Slack only) and a critical tier (3% aborted, fast burn, Slack + PagerDuty). They share a name so only one can be active at a time — apply one, watch the alert, delete it, apply the other.
+## Load testing and chaos
 
+**Load.** `loadtest/locust-deployment.yaml` runs Locust in-cluster to generate steady traffic against the UI, so the SLOs and dashboards have something real to measure.
+
+**Fault injection.** The `chaos-engineering/` folder injects failures with Istio, no code changes and no restarts. There are two kinds of fault — aborts (return HTTP 500) and latency (add delay) — each at a warning tier (small, slow burn, Slack only) and a critical tier (larger, fast burn, Slack + PagerDuty). Apply one, watch the alert fire, delete it, try another. 
 ---
 
 ## License
