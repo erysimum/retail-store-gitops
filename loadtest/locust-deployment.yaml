@@ -54,7 +54,7 @@ data:
         def view_cart(self):
             self.client.get("/cart", name="03_cart_page")
 
-        @task(2)
+        @task(0)
         def add_to_cart(self):
             self.client.post(
                 "/cart",
