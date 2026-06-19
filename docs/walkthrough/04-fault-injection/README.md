@@ -58,7 +58,7 @@ with the explanation:
 
 ## Locust agrees too
 
-Locust shows ~2% aggregate failures, and they're concentrated in **homepage and
+Locust shows ~1% aggregate failures, and they're concentrated in **homepage and
 catalog_page** — the two pages that actually call catalog. cart and checkout pages,
 which don't touch catalog, show 0 failures. So the failures bubble up exactly along
 the call path that goes through catalog, and nowhere else.
