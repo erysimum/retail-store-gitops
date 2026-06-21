@@ -2,7 +2,9 @@
 
 This is the repo ArgoCD actually watches. It holds the Helm chart that deploys the five services, the ArgoCD config that wires everything together, the observability layer (SLOs, dashboards, alert rules, scrape config, runbooks), and the Istio fault-injection files used for chaos testing.
 
-One of four repos. The cluster itself is built by **[retail-store-infra](https://github.com/erysimum/retail-store-infra)** — start there for the overview.
+One of five repos. The cluster itself is built by **[retail-store-infra](https://github.com/erysimum/retail-store-infra)** — start there for the overview.
+
+> 📖 **New here?** The **[Platform Walkthrough](docs/walkthrough/)** is the best place to start — a start-to-finish tour with screenshots: first traffic and SLOs, a Locust load test, tracing a failure to one broken request, Istio fault injection, and the AI SRE agent diagnosing a live breach.
 
 ---
 
